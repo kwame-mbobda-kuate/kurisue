@@ -6,14 +6,14 @@ from tqdm import tqdm
 import numpy
 import osmnx
 import numpy as np
+import itertools
 import pandas
+from multiprocessing import Pool
 
 MILE_IN_METER = 1609.344
 MAX_SPEED = 55 * MILE_IN_METER
+# Bounding box of New-York
 MIN_LON, MIN_LAT, MAX_LON, MAX_LAT = -74.2549337, 40.4983853, -73.7004728, 40.912507
-
-
-graph = osmnx.graph.graph_from_place("New York", network_type="drive")
 
 join = os.path.join
 
@@ -34,6 +34,12 @@ def download_url_with_bar(url: str, fname: str, chunk_size=1024):
             bar.update(size)
 
 
+def extract_thread_job(i: int):
+    subprocess.run(["jar", "xvf", f"trip_data_{i}.zip"])
+    os.remove(f"trip_data_{i}.zip")
+    os.remove(f"trip_fare_{i}.zip")
+
+
 def download_datasets(data_path: str):
     subprocess.run(["sudo", "apt-get", "install", "fastjar"])
     os.chdir(data_path)
@@ -46,10 +52,10 @@ def download_datasets(data_path: str):
     subprocess.run(["jar", "xvf", foil_zip_path])
     shutil.rmtree("__MACOSX")
     os.chdir("FOIL2013")
-    for i in range(1, 13):
-        subprocess.run(["jar", "xvf", f"trip_data_{i}.zip"])
-        os.remove(f"trip_data_{i}.zip")
-        os.remove(f"trip_fare_{i}.zip")
+
+    with Pool(12) as p:
+        p.map(extract_thread_job, range(1, 13))
+
     os.remove("FOIL2013.zip")
     os.chdir("..")
 
@@ -59,62 +65,65 @@ def download_datasets(data_path: str):
     )
 
 
+def clean_thread_job(args):
+    foil_path, i = args
+    df = pandas.read_csv(os.path.join(foil_path, f"trip_data_{i}.csv"))
+    os.remove(os.path.join(foil_path, f"trip_data_{i}.csv"))
+    df.drop(
+        [
+            "medallion",
+            " hack_license",
+            " vendor_id",
+            " rate_code",
+            " store_and_fwd_flag",
+        ],
+        axis=1,
+        inplace=True,
+    )
+    df.rename(columns={x: x.strip() for x in df.columns}, inplace=True)
+
+    mask_long_max = df["pickup_longitude"] <= MAX_LON
+    mask_long_min = df["pickup_longitude"] >= MIN_LON
+    mask_lat_max = df["pickup_latitude"] <= MAX_LAT
+    mask_lat_min = df["pickup_latitude"] >= MIN_LAT
+    df = df[
+        mask_lat_max & mask_lat_min & mask_long_max & mask_long_min
+    ]  # The trip must start and end in New York
+
+    df = df[df["passenger_count"] <= 5]  # A taxi cannot accept more than 5 passengers
+
+    df["trip_distance"] = df["trip_distance"] * MILE_IN_METER
+    df = df[
+        df["trip_distance"] / df["trip_time_in_secs"] <= MAX_SPEED
+    ]  # The averegae speed  must be less than the maximum speed
+
+    df = df[
+        df["trip_time_in_secs"] <= 12 * 60 * 60
+    ]  # A trip cannot last more than 12 hours
+    df = df[
+        df["trip_distance"]
+        >= osmnx.distance.euclidean(
+            df["pickup_latitude"],
+            df["pickup_longitude"],
+            df["dropoff_latitude"],
+            df["dropoff_longitude"],
+        )
+    ]
+
+    df["pickup_datetime"] = pandas.to_datetime(df["pickup_datetime"])
+    df["dropoff_datetime"] = pandas.to_datetime(df["dropoff_datetime"])
+
+    duration = (df["dropoff_datetime"] - df["pickup_datetime"]).dt.total_seconds()
+    mask_chrono = duration > 0
+    mask_diff = np.abs(duration - df["trip_time_in_secs"]) <= 60
+    df = df[mask_chrono & mask_diff]
+
+    df = df.dropna()
+
+    df.to_parquet(os.path.join(foil_path, f"trip_data_{i}.parquet"))
+
+
 def clean_datasets(foil_path: str):
 
-    for i in range(1, 13):
-        df = pandas.read_csv(os.path.join(foil_path, f"trip_data_{i}.csv"))
-        os.remove(os.path.join(foil_path, f"trip_data_{i}.csv"))
-        df.drop(
-            [
-                "medallion",
-                " hack_license",
-                " vendor_id",
-                " rate_code",
-                " store_and_fwd_flag",
-            ],
-            axis=1,
-            inplace=True,
-        )
-        df.rename(columns={x: x.strip() for x in df.columns}, inplace=True)
-
-        mask_long_max = df["pickup_longitude"] <= MAX_LON
-        mask_long_min = df["pickup_longitude"] >= MIN_LON
-        mask_lat_max = df["pickup_latitude"] <= MAX_LAT
-        mask_lat_min = df["pickup_latitude"] >= MIN_LAT
-        df = df[
-            mask_lat_max & mask_lat_min & mask_long_max & mask_long_min
-        ]  # The trip must start and end in New York
-
-        df = df[
-            df["passenger_count"] <= 5
-        ]  # A taxi cannot accept more than 5 passengers
-
-        df["trip_distance"] = df["trip_distance"] * MILE_IN_METER
-        df = df[
-            df["trip_distance"] / df["trip_time_in_secs"] <= MAX_SPEED
-        ]  # The averegae speed  must be less than the maximum speed
-
-        df = df[
-            df["trip_time_in_secs"] <= 12 * 60 * 60
-        ]  # A trip cannot last more than 12 hours
-        df = df[
-            df["trip_distance"]
-            >= osmnx.distance.euclidean(
-                df["pickup_latitude"],
-                df["pickup_longitude"],
-                df["dropoff_latitude"],
-                df["dropoff_longitude"],
-            )
-        ]
-
-        df["pickup_datetime"] = pandas.to_datetime(df["pickup_datetime"])
-        df["dropoff_datetime"] = pandas.to_datetime(df["dropoff_datetime"])
-
-        duration = (df["dropoff_datetime"] - df["pickup_datetime"]).dt.total_seconds()
-        mask_chrono = duration > 0
-        mask_diff = np.abs(duration - df["trip_time_in_secs"]) <= 60
-        df = df[mask_chrono & mask_diff]
-
-        df = df.dropna()
-
-        df.to_parquet(os.path.join(foil_path, f"trip_data_{i}.parquet"))
+    with Pool(12) as p:
+        p.map(clean_thread_job, itertools.product([foil_path], range(1, 13)))
