@@ -12,7 +12,7 @@ from multiprocessing import Pool
 
 MILE_IN_METER = 1609.344
 MAX_SPEED = 55 * MILE_IN_METER
-# Bounding box of New-York
+# Bounding box of New York
 MIN_LON, MIN_LAT, MAX_LON, MAX_LAT = -74.2549337, 40.4983853, -73.7004728, 40.912507
 
 join = os.path.join
@@ -86,9 +86,16 @@ def clean_thread_job(args):
     mask_long_min = df["pickup_longitude"] >= MIN_LON
     mask_lat_max = df["pickup_latitude"] <= MAX_LAT
     mask_lat_min = df["pickup_latitude"] >= MIN_LAT
-    df = df[
-        mask_lat_max & mask_lat_min & mask_long_max & mask_long_min
-    ]  # The trip must start and end in New York
+
+    df = df[mask_lat_max & mask_lat_min & mask_long_max & mask_long_min]
+
+    mask_long_max = df["dropoff_longitude"] <= MAX_LON
+    mask_long_min = df["dropoff_longitude"] >= MIN_LON
+    mask_lat_max = df["dropoff_latitude"] <= MAX_LAT
+    mask_lat_min = df["dropoff_latitude"] >= MIN_LAT
+
+    df = df[mask_lat_max & mask_lat_min & mask_long_max & mask_long_min]
+    # The trip must start and end in New York
 
     df = df[df["passenger_count"] <= 5]  # A taxi cannot accept more than 5 passengers
 
@@ -117,7 +124,7 @@ def clean_thread_job(args):
     mask_chrono = duration > 0
     mask_diff = np.abs(duration - df["trip_time_in_secs"]) <= 60
     df = df[mask_chrono & mask_diff]
-
+    # The difference between the trip time displayed and the one computed must be less than a minute
     df = df.dropna()
 
     df.to_parquet(os.path.join(foil_path, f"trip_data_{i}.parquet"))

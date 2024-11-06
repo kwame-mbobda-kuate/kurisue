@@ -21,7 +21,6 @@ def preprocess_datasets(graph, foil_path: str):
             X, Y = transformer.transform(
                 df[d + "latitude"].array, df[d + "longitude"].array
             )
-            # Bug : sometimes, X or Y contain nan or infinites
             _, pos = kd_tree.query(np.array([X, Y]).T, k=1, workers=-1)
-            df[d + "_nearest_node"] = nodes.index[pos]
+            df[d + "nearest_node"] = nodes.index[pos]
         df.to_parquet(os.path.join(foil_path, f"trip_data_{i}.parquet"))
