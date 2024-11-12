@@ -2,6 +2,7 @@ import osmnx
 import networkx
 import solver
 import data_management
+import data_processing
 
 
 osmnx.settings.log_console = True
