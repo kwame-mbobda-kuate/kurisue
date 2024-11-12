@@ -1,10 +1,8 @@
 import os
 import osmnx
 import numpy as np
-import networkx as nx
 from scipy.spatial import cKDTree
 import pandas as pd
-import scipy
 from pyproj import Transformer
 
 
@@ -27,10 +25,10 @@ def preprocess_datasets(graph, foil_path: str):
         df.to_parquet(os.path.join(foil_path, f"trip_data_{i}.parquet"))
 
 
-def build_raw_od_matrix(dates, graph, foil_path):
+def build_raw_od_matrix(foil_path, dates, graph_order):
 
-    od_matrix = np.zeros((graph.order(), graph.order()))
-    total_time = np.sum((dates["start"] - dates["end"]).dt.total_seconds())
+    od_matrix = np.zeros((graph_order, graph_order))
+    total_time = np.sum((dates["end"] - dates["start"]).dt.total_seconds())
     dates["month"] = dates["start"].dt.month
     for month, month_dates in dates.groupby("month"):
         df = pd.read_parquet(os.path.join(foil_path, f"trip_data_{month}.parquet"))
@@ -40,11 +38,8 @@ def build_raw_od_matrix(dates, graph, foil_path):
         max_start = np.maximum(
             df["pickup_datetime"].to_numpy()[:, np.newaxis], month_dates["start"]
         )
-        print(min_end)
-        print(min_end - max_start)
-        df["intersection_times"] = np.sum(
-            np.maximum((min_end - max_start).dt.total_seconds(), 0), axis=1
-        )
+        diff = (max_start - min_end) / np.timedelta64(1, 's')
+        df["intersection_time"] = np.sum(np.maximum(diff, 0), axis=1)
         agg = df.groupby(["pickup_nearest_node", "dropoff_nearest_node"])[
             "intersection_time"
         ].sum()

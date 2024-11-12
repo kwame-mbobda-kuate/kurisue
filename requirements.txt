@@ -1,8 +1,8 @@
 networkx
 numpy 
-osmnx==1.9.4
-pandas==2.2.3
-pyproj==3.7.0
-Requests==2.32.3
-scipy==1.14.1
-tqdm==4.66.5
+osmnx
+pandas
+pyproj
+Requests
+scipy
+tqdm

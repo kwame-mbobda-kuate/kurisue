@@ -17,4 +17,4 @@ graph = networkx.convert_node_labels_to_integers(graph)
 data_management.download_datasets("/home/onyxia/work/data")
 data_management.clean_datasets("/home/onyxia/work/data/FOIL2013")
 
-solver.preprocess_datasets(graph, "/home/onyxia/work/data/FOIL2013")
+data_processing.preprocess_datasets(graph, "/home/onyxia/work/data/FOIL2013")
