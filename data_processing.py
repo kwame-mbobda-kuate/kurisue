@@ -31,6 +31,7 @@ def build_raw_od_matrix(foil_path, dates, graph_order):
     total_time = np.sum((dates["end"] - dates["start"]).dt.total_seconds())
     dates["month"] = dates["start"].dt.month
     for month, month_dates in dates.groupby("month"):
+        # [a, b] ^ [c, d] = max(min(b, d) - max(a, c), 0)
         df = pd.read_parquet(os.path.join(foil_path, f"trip_data_{month}.parquet"))
         min_end = np.minimum(
             df["dropoff_datetime"].to_numpy()[:, np.newaxis], month_dates["end"]

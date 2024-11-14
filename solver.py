@@ -25,6 +25,7 @@ def solve(
     eps = tol + 1
     while j < max_steps and eps > tol:
         t = t0 * (1 + a * (x / c) ** b)
+        # ln((t / t0) - 1) = ln(a) + b * ln(x / c)
         shortest_paths = dict(nx.shortest_path(graph, weight=lambda u, v, _: t[u, v]))
         y = np.zeros((graph.order(), graph.order()))
         for u in shortest_paths:
