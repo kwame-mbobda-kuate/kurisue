@@ -1,6 +1,64 @@
 import numpy as np
 import networkx as nx
 import scipy
+import collections
+
+Function = collections.namedtuple("Function", ["antideriv", "main", "deriv"])
+
+null_function = Function(lambda x: 0, lambda x: 0, lambda x: 0)
+
+
+def sparse_solver(
+    graph: nx.MultiDiGraph,
+    od_demand: scipy.sparse.csr_array,
+    functions,
+    tol: float = 0.1,
+    max_steps: int = 100,
+    mode: str = "UE",
+):
+    x = scipy.sparse.dok_array((graph.order, graph.order))
+    t = scipy.sparse.dok_array((graph.order, graph.order))
+    for u, v in functions:
+        t[u, v] = functions[(u, v)].main(x[u, v])
+    shortest_paths = dict(nx.shortest_path(graph, weight=lambda u, v, _: t[u, v]))
+    for u in shortest_paths:
+        for v in shortest_paths[u]:
+            path = shortest_paths[u][v]
+            for k in range(len(path) - 1):
+                x[path[k], path[k + 1]] += od_demand[u, v]
+    j = 0
+    eps = tol + 1
+    while j < max_steps and eps > tol:
+        t = scipy.sparse.dok_array((graph.order, graph.order))
+        for u, v in functions:
+            t[u, v] = functions.get[(u, v)].main(x[u, v])
+        shortest_paths = dict(nx.shortest_path(graph, weight=lambda u, v, _: t[u, v]))
+        y = scipy.sparse.dok_array((graph.order(), graph.order()))
+        for u in shortest_paths:
+            for v in shortest_paths[v]:
+                path = shortest_paths[u][v]
+                for k in range(len(path) - 1):
+                    y[path[k], path[k + 1]] += od_demand[u, v]
+
+        def f(alpha):
+            return sum(
+                functions[(u, v)].antideriv((1 - alpha) * x[u, v] - y[u, v])
+                for (u, v) in functions
+            )
+
+        def f_p(alpha):
+            return sum(
+                (y[u, v] - x[u, v])
+                * functions[(u, v)].main((1 - alpha) * x[u, v] - y[u, v])
+                for (u, v) in functions
+            )
+
+        res = scipy.optimize.minimize(f, x0=1 / 2, jac=f_p, bounds=[(0, 1)])
+        alpha = res.x
+        eps = np.max(np.abs(alpha * (y - x)))
+        x = x + alpha * (y - x)
+        j += 1
+    return x
 
 
 def solve(
@@ -47,29 +105,3 @@ def solve(
         x = x + alpha * (y - x)
         j += 1
     return x
-
-
-"""
-# Exemple de Wikipédia
-N = 10**5
-G = nx.Graph()
-start = 0
-a = 1
-b = 2
-end = 3
-G.add_edges_from([(start, a), (start, b), (a, end), (b, end)])
-od_demand = np.zeros((4, 4))
-od_demand[start, end] = 4000
-c = np.ones((4, 4))
-a_mat = np.zeros((4, 4))
-b_mat = np.ones((4, 4))
-t0 = np.zeros((4, 4))
-t0[start, a] = t0[b, end] = 1 / N
-t0[a, end] = t0[start, b] = 45
-od_demand[start, end] = 4000
-a_mat[b, end] = a_mat[start, a] = N / 100
-
-print(solve(G, od_demand, t0, a_mat, b_mat, c))
-
-G.add_edge(a, b)
-print(solve(G, od_demand, t0, a_mat, b_mat, c))"""

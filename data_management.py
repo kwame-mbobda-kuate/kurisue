@@ -41,6 +41,7 @@ def extract_thread_job(i: int):
 
 
 def download_datasets(data_path: str):
+    os.makedirs(data_path, exist_ok=True)
     subprocess.run(["sudo", "apt-get", "update"])
     subprocess.run(["sudo", "apt-get", "install", "fastjar"])
     os.chdir(data_path)
