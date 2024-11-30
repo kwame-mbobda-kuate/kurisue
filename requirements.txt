@@ -6,3 +6,4 @@ pyproj
 Requests
 scipy
 tqdm
+fastparquet
