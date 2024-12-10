@@ -7,7 +7,7 @@ import numpy
 import osmnx
 import numpy as np
 import itertools
-import pandas
+import pandas as pd
 from multiprocessing import Pool
 
 MILE_IN_METER = 1609.344
@@ -69,7 +69,7 @@ def download_datasets(data_path: str):
 
 def clean_thread_job(args):
     foil_path, i = args
-    df = pandas.read_csv(os.path.join(foil_path, f"trip_data_{i}.csv"))
+    df = pd.read_csv(os.path.join(foil_path, f"trip_data_{i}.csv"))
     os.remove(os.path.join(foil_path, f"trip_data_{i}.csv"))
     df.drop(
         [
@@ -119,8 +119,8 @@ def clean_thread_job(args):
         )
     ]
 
-    df["pickup_datetime"] = pandas.to_datetime(df["pickup_datetime"])
-    df["dropoff_datetime"] = pandas.to_datetime(df["dropoff_datetime"])
+    df["pickup_datetime"] = pd.to_datetime(df["pickup_datetime"])
+    df["dropoff_datetime"] = pd.to_datetime(df["dropoff_datetime"])
 
     duration = (df["dropoff_datetime"] - df["pickup_datetime"]).dt.total_seconds()
     mask_chrono = duration > 0
