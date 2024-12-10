@@ -136,3 +136,9 @@ def clean_datasets(foil_path: str):
 
     with Pool(12) as p:
         p.map(clean_thread_job, itertools.product([foil_path], range(1, 13)))
+
+
+def date(df):
+    df = df.rename(columns={'Yr': 'year', 'M': 'month', 'D': 'day', 'HH': 'hour', 'MM': 'minute'})
+    df['datetime'] = pandas.to_datetime(df[['year', 'month', 'day', 'hour', 'minute']])
+    return df
