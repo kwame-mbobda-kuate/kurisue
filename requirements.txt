@@ -7,3 +7,5 @@ Requests
 scipy
 tqdm
 fastparquet
+geopandas
+shapely
