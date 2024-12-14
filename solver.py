@@ -1,6 +1,6 @@
-import numpy as np
 import networkx as nx
 import scipy
+from typing import Dict, Tuple
 import collections
 
 Function = collections.namedtuple("Function", ["antideriv", "main", "deriv"])
@@ -13,67 +13,70 @@ def get_linear_function(a: float, b: float):
 
 
 def solve(
-    graph: nx.MultiDiGraph,
-    od_demand: dict,
-    functions,
+    graph: nx.DiGraph,
+    od_matrix: scipy.sparse.dok_array,
+    functions: Dict[Tuple[int, int], Function],
     tol: float = 0.1,
     max_steps: int = 100,
     mode: str = "UE",
-):
+) -> dict:
+    sources, targets = od_matrix.nonzero()
+    new_sources, new_targets = [], []
+    edges = graph.edges()
+    null_dict = dict()
     x = dict()
     t = dict()
-    for u, v in functions:
-        t[(u, v)] = functions[(u, v)].main(x.get((u, v), 0))
-    shortest_paths = dict(
-        nx.shortest_path(graph, weight=lambda u, v, _: t.get((u, v), 0))
-    )
-    for u in shortest_paths:
-        for v in shortest_paths[u]:
-            if (u, v) in od_demand:
-                path = shortest_paths[u][v]
-                for k in range(len(path) - 1):
-                    x[(path[k], path[k + 1])] = (
-                        x.get((path[k], path[k + 1]), 0) + od_demand[(u, v)]
-                    )
+
+    for u, v in edges:
+        null_dict[(u, v)] = 0
+        t[(u, v)] = functions[(u, v)].main(0)
+
+    x = null_dict.copy()
+    for source, target in zip(sources, targets):
+        try:
+            shortest_path = nx.shortest_path(
+                graph, source=source, target=target, weight=lambda u, v, _: t[(u, v)]
+            )
+        except nx.exception.NetworkXNoPath:
+            continue
+        new_sources.append(source)
+        new_targets.append(target)
+        for k in range(len(shortest_path) - 1):
+            x[(shortest_path[k], shortest_path[k + 1])] += od_matrix[source, target]
+
+    sources, targets = new_sources, new_targets
+
     j = 0
     eps = tol + 1
     while j < max_steps and eps > tol:
-        t = dict()
+        t = null_dict.copy()
         for u, v in functions:
-            t[(u, v)] = functions[(u, v)].main(x.get((u, v), 0))
-        shortest_paths = dict(
-            nx.shortest_path(graph, weight=lambda u, v, _: t.get((u, v), 0))
-        )
-        y = dict()
-        for u in shortest_paths:
-            for v in shortest_paths[v]:
-                if (u, v) in od_demand:
-                    path = shortest_paths[u][v]
-                    for k in range(len(path) - 1):
-                        y[(path[k], path[k + 1])] = (
-                            y.get((path[k], path[k + 1]), 0) + od_demand[(u, v)]
-                        )
+            t[(u, v)] = functions[(u, v)].main(x[u, v])
+
+        y = null_dict.copy()
+        for source, target in zip(sources, targets):
+            shortest_path = nx.shortest_path(
+                graph, source=source, target=target, weight=lambda u, v, _: t[(u, v)]
+            )
+            for k in range(len(shortest_path) - 1):
+                y[(shortest_path[k], shortest_path[k + 1])] += od_matrix[source, target]
 
         def f(alpha):
             return sum(
-                functions.get((u, v), null_function).antideriv(
-                    (1 - alpha) * x.get((u, v), 0) + alpha * y.get((u, v), 0)
-                )
-                for u, v in graph.edges()
+                functions[(u, v)].antideriv((1 - alpha) * x[(u, v)] + alpha * y[(u, v)])
+                for u, v in edges
             )
 
         def f_p(alpha):
             return sum(
-                (y.get((u, v), 0) - x.get((u, v), 0))
-                * functions.get((u, v), null_function).main(
-                    (1 - alpha) * x.get((u, v), 0) + alpha * y.get((u, v), 0)
-                )
-                for u, v in graph.edges()
+                (y[u, v] - x[u, v])
+                * functions[(u, v)].main((1 - alpha) * x[(u, v)] + alpha * y[(u, v)])
+                for u, v in edges
             )
 
         res = scipy.optimize.minimize(f, x0=1 / 2, jac=f_p, bounds=[(0, 1)])
         alpha = res.x
-        eps = alpha * max(abs(y.get((u, v), 0) - x.get((u, v), 0)) for u, v in graph.edges())
-        x = {(u, v): x.get((u, v), 0) + alpha * (y.get((u, v), 0) - x.get((u, v), 0)) for u, v in graph.edges()}
+        eps = alpha * max(abs(y[(u, v)] - x[(u, v)]) for u, v in edges)
+        x = {(u, v): x[(u, v)] + alpha * (y[(u, v)] - x[(u, v)]) for u, v in edges}
         j += 1
     return x

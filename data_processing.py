@@ -6,7 +6,6 @@ from scipy.spatial import cKDTree
 import pandas as pd
 from pyproj import Transformer
 from datetime import datetime
-import time
 
 
 def preprocess_datasets(graph, foil_path: str):
@@ -62,8 +61,7 @@ def correct_dates(dates):
 
 
 def build_raw_od_matrix(foil_path, dates, graph_order):
-
-    od_matrix = np.zeros((graph_order, graph_order))
+    od_matrix = scipy.sparse.coo_array((graph_order, graph_order))
     total_time = np.sum((dates["end"] - dates["start"]).dt.total_seconds())
     dates = correct_dates(dates)
     dates["month"] = dates["start"].dt.month
@@ -83,8 +81,10 @@ def build_raw_od_matrix(foil_path, dates, graph_order):
         agg = df.groupby(["pickup_nearest_node", "dropoff_nearest_node"])[
             "intersection_time"
         ].sum()
-        od_matrix[
-            agg.index.get_level_values("pickup_nearest_node"),
-            agg.index.get_level_values("dropoff_nearest_node"),
-        ] += agg
+        rows = agg.index.get_level_values("pickup_nearest_node").values
+        cols = agg.index.get_level_values("dropoff_nearest_node").values
+        values = agg.values
+        od_matrix += scipy.sparse.coo_array(
+            (values, (rows, cols)), shape=(graph_order, graph_order), dtype=np.float64
+        )
     return od_matrix / total_time
