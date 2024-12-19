@@ -7,21 +7,17 @@ import scipy
 t = time.perf_counter()
 
 N = 10  # Number of solvings
-n = 100  # Number of nodes of the graph
+n = 1000  # Number of nodes of the graph
 p = 0.01  # Probability that two nodes are connected
 seed = 1130426  # S;G
 np.random.seed(seed)
-graph = nx.fast_gnp_random_graph(n, p, seed=1, directed=True)
+graph = nx.fast_gnp_random_graph(n, p, seed=seed, directed=True)
 
-t0 = 1
+t0 = 1  # free flow travel time
 a = 0.15  # alpha
 b = 4  # beta
 c = 1  # capacity
-bpr = solver.Function(
-    lambda x: t0 * (1 + a * x ** (b + 1) / c**b),
-    lambda x: t0 * (1 + a * (x / c) ** b),
-    lambda x: t0 * (a * b * x ** (b - 1) / c**b),
-)
+bpr = solver.get_bpr_function(a, b, c, t0)
 
 scale = 3  # Scale parameter of the exponential law
 od_matrix = scipy.sparse.dok_array((n, n))

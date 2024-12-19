@@ -12,6 +12,14 @@ def get_linear_function(a: float, b: float):
     return Function(lambda x: a * x**2 / 2 + b * x, lambda x: a * x + b, lambda x: a)
 
 
+def get_bpr_function(a: float, b: float, c: float, t0: float):
+    return Function(
+        lambda x: t0 * (1 + a * x ** (b + 1) / c**b),
+        lambda x: t0 * (1 + a * (x / c) ** b),
+        lambda x: t0 * (a * b * x ** (b - 1) / c**b),
+    )
+
+
 def solve(
     graph: nx.DiGraph,
     od_matrix: scipy.sparse.dok_array,
