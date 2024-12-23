@@ -9,4 +9,3 @@ tqdm
 fastparquet
 geopandas
 shapely
-graph_tool

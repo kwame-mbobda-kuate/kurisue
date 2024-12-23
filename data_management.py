@@ -1,7 +1,6 @@
 import requests
 import os
 import subprocess
-import shutil
 from tqdm import tqdm
 import numpy
 import osmnx
@@ -34,31 +33,21 @@ def download_url_with_bar(url: str, fname: str, chunk_size=1024):
             bar.update(size)
 
 
-def extract_thread_job(i: int):
-    subprocess.run(["jar", "xvf", f"trip_data_{i}.zip"])
-    os.remove(f"trip_data_{i}.zip")
-    os.remove(f"trip_fare_{i}.zip")
-
-
 def download_datasets(data_path: str):
     os.makedirs(data_path, exist_ok=True)
     subprocess.run(["sudo", "apt-get", "update"])
-    subprocess.run(["sudo", "apt-get", "install", "fastjar"])
+    subprocess.run(["sudo", "apt-get", "install", "p7zip*"])
     os.chdir(data_path)
     foil_path = "FOIL2013"
-    foil_zip_path = join(foil_path, "FOIL2013.zip")
+    foil_zip_path = join(foil_path, "FOIL2013.7z")
     os.makedirs(foil_path, exist_ok=True)
     download_url_with_bar(
-        "https://databank.illinois.edu/datafiles/ws2jn/download", foil_zip_path
+        "https://archive.org/download/nycTaxiTripData2013/trip_data.7z", foil_zip_path
     )
-    subprocess.run(["jar", "xvf", foil_zip_path])
-    shutil.rmtree("__MACOSX")
     os.chdir("FOIL2013")
+    subprocess.run(["7z", "x", "FOIL2013.7z"])
 
-    with Pool(12) as p:
-        p.map(extract_thread_job, range(1, 13))
-
-    os.remove("FOIL2013.zip")
+    os.remove("FOIL2013.7z")
     os.chdir("..")
 
     download_url_with_bar(
