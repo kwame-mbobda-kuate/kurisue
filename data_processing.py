@@ -27,10 +27,6 @@ def preprocess_datasets(graph, foil_path: str):
         df.to_parquet(os.path.join(foil_path, f"trip_data_{i}.parquet"))
 
 
-# géraud hands on scikit learn
-# breiman the two cultures
-
-
 def create_date(year, month):
     return np.datetime64(datetime(year, month, 1))
 
@@ -66,7 +62,6 @@ def build_raw_od_matrix(foil_path, dates, graph_order):
     dates = correct_dates(dates)
     dates["month"] = dates["start"].dt.month
     for month, month_dates in dates.groupby("month"):
-        # [a, b] ^ [c, d] = max(min(b, d) - max(a, c), 0)
         df = pd.read_parquet(os.path.join(foil_path, f"trip_data_{month}.parquet"))
         min_end = np.minimum(
             df["dropoff_datetime"].to_numpy(),

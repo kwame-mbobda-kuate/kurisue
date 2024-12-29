@@ -1,2 +1,2 @@
-# soue
-System Optimum and User Equilbirum (name suject to change)
+# kurisue
+Kwame-Adam's Urban Road Infrastructure Solver for User Equilbirum

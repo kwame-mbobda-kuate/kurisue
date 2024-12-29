@@ -35,8 +35,6 @@ def download_url_with_bar(url: str, fname: str, chunk_size=1024):
 
 def download_datasets(data_path: str):
     os.makedirs(data_path, exist_ok=True)
-    subprocess.run(["sudo", "apt-get", "update"])
-    subprocess.run(["sudo", "apt-get", "install", "p7zip*"])
     os.chdir(data_path)
     foil_path = "FOIL2013"
     foil_zip_path = join(foil_path, "FOIL2013.7z")
@@ -44,6 +42,7 @@ def download_datasets(data_path: str):
     download_url_with_bar(
         "https://archive.org/download/nycTaxiTripData2013/trip_data.7z", foil_zip_path
     )
+    exit()
     os.chdir("FOIL2013")
     subprocess.run(["7z", "x", "FOIL2013.7z"])
 
@@ -70,6 +69,7 @@ def clean_thread_job(args):
         ],
         axis=1,
         inplace=True,
+        errors="ignore"
     )
     df.rename(columns={x: x.strip() for x in df.columns}, inplace=True)
 
