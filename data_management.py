@@ -69,7 +69,6 @@ def clean_thread_job(args):
         ],
         axis=1,
         inplace=True,
-        errors="ignore"
     )
     df.rename(columns={x: x.strip() for x in df.columns}, inplace=True)
 
@@ -127,7 +126,18 @@ def clean_datasets(foil_path: str):
         p.map(clean_thread_job, itertools.product([foil_path], range(1, 13)))
 
 
-def date(df):
+def date_traffic(df): #put date into datetime type for traffic files
     df = df.rename(columns={'Yr': 'year', 'M': 'month', 'D': 'day', 'HH': 'hour', 'MM': 'minute'})
     df['datetime'] = pandas.to_datetime(df[['year', 'month', 'day', 'hour', 'minute']])
+    return df
+
+def date_taxis(df): #put date into datetime for taxis files
+    df['pickup_datetime'] = pd.to_datetime(df['pickup_datetime'])
+    df['dropoff_datetime'] = pd.to_datetime(df['dropoff_datetime'])
+
+    df['pickup_hour'] = df['pickup_datetime'].dt.hour
+    df['pickup_day'] = df['pickup_datetime'].dt.day_name()
+    df['pickup_month'] = df['pickup_datetime'].dt.month
+    df['pickup_date'] = df['pickup_datetime'].dt.date
+
     return df
