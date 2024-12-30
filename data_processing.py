@@ -56,7 +56,7 @@ def correct_dates(dates):
     return pd.DataFrame({"start": new_start_dates, "end": new_end_dates})
 
 
-def build_raw_od_matrix(foil_path, dates, graph_order):
+def build_raw_od_matrix(foil_path, dates, graph_order, norm=True):
     od_matrix = scipy.sparse.coo_array((graph_order, graph_order))
     total_time = np.sum((dates["end"] - dates["start"]).dt.total_seconds())
     dates = correct_dates(dates)
@@ -82,4 +82,6 @@ def build_raw_od_matrix(foil_path, dates, graph_order):
         od_matrix += scipy.sparse.coo_array(
             (values, (rows, cols)), shape=(graph_order, graph_order), dtype=np.float64
         )
-    return od_matrix / total_time
+    if norm:
+        od_matrix = od_matrix / total_time
+    return od_matrix
