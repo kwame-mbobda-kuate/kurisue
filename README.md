@@ -7,7 +7,7 @@ Nous étudions le réseau routier de la ville de New York afin d'étudier les ch
 ## Méthodologie suivie
 ### La récupération et le traitement des données
 Nous nous appuyons sur un jeu de données publié par la Commission des Taxis et des Limousines de New York, détaillant l'intégralité des trajets effectués avec ces modes de transports en 2013. Il s'agit de données public, fournies à la suite d'une demande relative à la loi d'accès à l'information américaine. Le deuxième jeu de données utilisé est issu des enregistreurs de trafic automatisés pour collecter des échantillons de volume de trafic aux croisements de ponts et sur les routes. Il est fourni par le département des transports de la ville de New York.
-Les données sont récupérées simplement par des requêtes HTTP. Le premier jeu de données doit être décompressé avant de pouvoir être exploité. Enfin, les données spatiales proviennent d'OpenStreetMaps.
+Les données sont récupérées simplement par des requêtes HTTP. Le premier jeu de données doit être décompressé avant de pouvoir être exploité. Enfin, les données spatiales proviennent d'OpenStreetMap.
 
 ### L’analyse descriptive et la représentation graphique
 Nous effectuons quelques tracés de graphes afin d'étudier les tendances des déplacements urbains à diverses échelles temporelles.
