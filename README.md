@@ -1,4 +1,4 @@
-# KURISUE : Kwame-Adam's Urban Road Infrastructure Solver for User Equilbirum
+# KURISUE : Kwame-Adam's Urban Road Infrastructure Solver for User Equilibrium
 Projet réalisé par Adam Clerget et Kwame Mbobda-Kuate dans le cadre du cours Python pour la data science de deuxième année de l’ENSAE dispensé par Lino Galiana.
 
 ## Objectif du projet
