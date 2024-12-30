@@ -15,8 +15,13 @@ Nous effectuons quelques tracés de graphes afin d'étudier les tendances des d�
 ### Modélisation
 Nous résolvons le problème de l'assignation du traffic dans un cadre statique et uniquement du point de vue de l'équilibre utilisateur. Il s'agit d'un problème classique et nous nous servons du modèle iTAPAS pour le résoudre. Un modèle plus simple et réalisé par nous mêmes mais par la suite abandonné ainsi que la formalisation du problème sont exposés dans le fichier prototype.ipynb. Le modèle iTAPAS est décrit dans [1, 2] et l'implémentation utilisée provient de [3].
 
-## Fonctionnement
-Il suffit d'exécuter le fichier main.ipynb. Attention, le programme est très demandant en matière de ressources de stockage (environ 15 Go) et de RAM.
+## Structure du projet
+Le notebook principal est main.ipnyb. L'exécuter prend environ 3h et est très demandant en matière de ressources de stockage (environ 20 Go) et de RAM.
+prototype.ipynb contient une implémentation d'un autre solveur pour le même modèle. Ce fichier avait pour but d'exposer les notions théoriques et de démontrer la faisabilité du projet.
+data_management.py contient des fonctions liées à la récupération et le nettoyage des données.
+data_processing.py contient des fonctions transformant les données afin de les utiliser dans les rendre exploitables par d'autres fonctions.
+solver.py est une copie de [3] avec quelques ajouts pour définir les fonctions de coût.
+test_solver.py est un fichier de test du solveur contenu dans solver.py.
 
 ### Références
 [1] Xie, J., & Xie, C. (2014, October). An improved TAPAS algorithm for the traffic assignment problem. In Intelligent Transportation Systems (ITSC), 2014 IEEE 17th International Conference on (pp. 2336-2341). IEEE.
