@@ -42,7 +42,6 @@ def download_datasets(data_path: str):
     download_url_with_bar(
         "https://archive.org/download/nycTaxiTripData2013/trip_data.7z", foil_zip_path
     )
-    exit()
     os.chdir("FOIL2013")
     subprocess.run(["7z", "x", "FOIL2013.7z"])
 
@@ -54,22 +53,18 @@ def download_datasets(data_path: str):
         "automated_traffic_volume_counts.csv",
     )
 
+    os.chdir("..")
+
 
 def clean_thread_job(args):
     foil_path, i = args
     df = pd.read_csv(os.path.join(foil_path, f"trip_data_{i}.csv"))
     os.remove(os.path.join(foil_path, f"trip_data_{i}.csv"))
-    df.drop(
-        [
-            "medallion",
-            " hack_license",
-            " vendor_id",
-            " rate_code",
-            " store_and_fwd_flag",
-        ],
-        axis=1,
-        inplace=True,
-    )
+    columns_to_drop = ["medallion", "hack_license", "vendor_id", "rate_code", "store_and_fwd_flag"]
+    for column_name in columns_to_drop:
+        if column_name in df.columns:
+            df.drop(columns=[column_name], axis=1, inplace=True)
+
     df.rename(columns={x: x.strip() for x in df.columns}, inplace=True)
 
     mask_long_max = df["pickup_longitude"] <= MAX_LON
